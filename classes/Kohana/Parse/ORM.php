@@ -736,6 +736,7 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 	public function cached($lifetime = NULL)
 	{
 		throw new Exception('Not implemented!');
+		// TODO can we cache depending upon the login method?
 
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(

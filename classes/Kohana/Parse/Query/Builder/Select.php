@@ -68,7 +68,7 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 	 */
 	public function from($table)
 	{
-		$this->_from = $table;
+		list($this->_from, ) = $table;
 
 		return $this;
 	}
@@ -115,10 +115,8 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 			// Add selection conditions
 			$where .= json_encode($this->_compile_conditions($db, $this->_where));
 
-			print_r($where);
-			exit();
 		}
-
+/*
 		if ( ! empty($this->_order_by))
 		{
 			// Add sorting
@@ -136,7 +134,7 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 			// Add offsets
 			$where .= ' OFFSET '.$this->_offset;
 		}
-
+*/
 		$this->_sql = $where;
 
 		return parent::compile($db);
@@ -145,7 +143,6 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 	public function reset()
 	{
 		$this->_select   =
-		$this->_from     =
 		$this->_join     =
 		$this->_where    =
 		$this->_group_by =
@@ -155,6 +152,7 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 
 		$this->_distinct = FALSE;
 
+		$this->_from      =
 		$this->_limit     =
 		$this->_offset    =
 		$this->_last_join = NULL;

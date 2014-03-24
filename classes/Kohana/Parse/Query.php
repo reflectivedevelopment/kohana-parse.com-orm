@@ -99,7 +99,7 @@ class Kohana_Parse_Query extends Database_Query {
 		}
 
 		// Execute the query
-		$result = $db->query($this->_type, $sql, $as_object, $object_params);
+		$result = $db->objectQuery($this->_from, $sql);
 
 		if (isset($cache_key) AND $this->_lifetime > 0)
 		{

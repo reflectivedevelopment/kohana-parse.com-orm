@@ -143,6 +143,74 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 	}
 
 	/**
+	 * Handles setting of columns
+	 * Override this method to add custom set behavior
+	 *
+	 * @param  string $column Column name
+	 * @param  mixed  $value  Column value
+	 * @throws Kohana_Exception
+	 * @return ORM
+	 */
+	public function set($column, $value)
+	{
+		if ( ! isset($this->_object_name))
+		{
+			// Object not yet constructed, so we're loading data from a database call cast
+			$this->_cast_data[$column] = $value;
+			
+			return $this;
+		}
+		
+		if (in_array($column, $this->_serialize_columns))
+		{
+			$value = $this->_serialize_value($value);
+		}
+
+		if (array_key_exists($column, $this->_object))
+		{
+			// Filter the data
+			$value = $this->run_filter($column, $value);
+
+			// See if the data really changed
+			if ($value !== $this->_object[$column])
+			{
+				$this->_object[$column] = $value;
+
+				// Data has changed
+				$this->_changed[$column] = $column;
+
+				// Object is no longer saved or valid
+				$this->_saved = $this->_valid = FALSE;
+			}
+		}
+		elseif (isset($this->_belongs_to[$column]))
+		{
+			// Update related object itself
+			$this->_related[$column] = $value;
+
+			// Update the foreign key of this model
+			$this->_object[$this->_belongs_to[$column]['foreign_key']] = ($value instanceof ORM)
+				? $value->pk()
+				: NULL;
+
+			$this->_changed[$column] = $this->_belongs_to[$column]['foreign_key'];
+		}
+		else
+		{
+			$this->_object[$column] = $value;
+
+			// Data has changed
+			$this->_changed[$column] = $column;
+
+			// Object is no longer saved or valid
+			$this->_saved = $this->_valid = FALSE;
+		}
+
+		return $this;
+	}
+
+
+	/**
 	 * Initializes the Database Builder to given query type
 	 *
 	 * @param  integer $type Type of Database query
@@ -790,3 +858,4 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 		return ( ! $model->loaded());
 	}
 } // End ORM
+

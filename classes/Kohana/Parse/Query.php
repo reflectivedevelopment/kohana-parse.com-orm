@@ -84,7 +84,7 @@ class Kohana_Parse_Query extends Database_Query {
 		// Compile the SQL query
 		$sql = $this->compile($db);
 
-		if ($this->_lifetime !== NULL AND $this->_type === Parse::SELECT)
+		if ($this->_lifetime !== NULL AND $this->_type === Database::SELECT)
 		{
 			// Set the cache key based on the database instance name and SQL
 			$cache_key = 'Parse::query("'.$db.'", "'. $this->_from .'", "'.$sql.'")';
@@ -99,7 +99,12 @@ class Kohana_Parse_Query extends Database_Query {
 		}
 
 		// Execute the query
-		$result = $db->objectQuery($this->_from, $sql);
+		if ($this->_type == Database::SELECT)
+		{
+			$result = $db->objectQuery($this->_from, $sql);
+			$result = new Database_Parse_Result($result, $this->_from, $sql, $as_object, $object_params);
+
+		}
 
 		if (isset($cache_key) AND $this->_lifetime > 0)
 		{

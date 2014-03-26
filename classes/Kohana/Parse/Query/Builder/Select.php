@@ -102,39 +102,34 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 		}
 
 		// Start a selection query
-		$where = '';
+		$where = array();
 
-	/*	if ( ! empty($this->_from))
-		{
-			// Set tables to select from
-			$query .= ' FROM '.implode(', ', array_unique(array_map($quote_table, $this->_from)));
-		}
-*/
 		if ( ! empty($this->_where))
 		{
 			// Add selection conditions
-			$where .= json_encode($this->_compile_conditions($db, $this->_where));
+			$where['where'] = json_encode($this->_compile_conditions($db, $this->_where));
 
 		}
 /*
+		//TODO add order by
 		if ( ! empty($this->_order_by))
 		{
 			// Add sorting
 			$where .= ' '.$this->_compile_order_by($db, $this->_order_by);
 		}
-
+*/
 		if ($this->_limit !== NULL)
 		{
 			// Add limiting
-			$where .= ' LIMIT '.$this->_limit;
+			$where['limit'] = $this->_limit;
 		}
 
 		if ($this->_offset !== NULL)
 		{
 			// Add offsets
-			$where .= ' OFFSET '.$this->_offset;
+			$where['skip'] = $this->_offset;
 		}
-*/
+
 		$this->_sql = $where;
 
 		return parent::compile($db);
@@ -153,9 +148,10 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 		$this->_distinct = FALSE;
 
 		$this->_from      =
-		$this->_limit     =
 		$this->_offset    =
 		$this->_last_join = NULL;
+
+		$this->_limit     = 1000;
 
 		$this->_parameters = array();
 

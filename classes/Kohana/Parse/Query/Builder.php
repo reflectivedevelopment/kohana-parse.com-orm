@@ -56,7 +56,7 @@ class Kohana_Parse_Query_Builder extends Parse_Query {
 				throw new Exception('Ahh, snap!');
 			}
 			$current_sql = $new_sql;
-		} while ($to_condition != $last_condition);
+		} while ($to_condition != $last_condition && count($sql_stack) > 0);
 		
 		return array($sql_stack, $logic_stack, $condition_stack, $current_sql);
 	}
@@ -97,13 +97,16 @@ class Kohana_Parse_Query_Builder extends Parse_Query {
 				{
 					if ($logic == 'OR')
 					{
+						if (count($logic_stack) > 0 && $logic_stack[count($logic_stack) - 1] == 'OR')
+						{
+							list($sql_stack, $logic_stack, $condition_stack, $current_sql) = $this->_pop_stack($sql_stack, $logic_stack, $condition_stack, $current_sql, $condition_stack[count($condition_stack) - 1]);
+						}
 						if (array_key_exists('$or', $current_sql))
 						{
 							$new_sql = $current_sql['$or'];
 							array_push($sql_stack, $current_sql);
 							array_push($logic_stack, 'OR');
 							array_push($condition_stack, '$or_array');
-							$or_condition = '$or_array';
 							$current_sql = array();
 						}
 						else
@@ -111,7 +114,6 @@ class Kohana_Parse_Query_Builder extends Parse_Query {
 							array_push($sql_stack, $current_sql);
 							array_push($logic_stack, 'OR');
 							array_push($condition_stack, '$or');
-							$or_condition = '$or';
 							$current_sql = array();
 
 						}
@@ -157,13 +159,11 @@ class Kohana_Parse_Query_Builder extends Parse_Query {
 						$current_sql[$column] = array($op => $value);
 					}
 
-					if ($logic == 'OR')
-					{
-						list($sql_stack, $logic_stack, $condition_stack, $current_sql) = $this->_pop_stack($sql_stack, $logic_stack, $condition_stack, $current_sql, $or_condition);
-					}
 				}
 			}
 		}
+
+		list($sql_stack, $logic_stack, $condition_stack, $current_sql) = $this->_pop_stack($sql_stack, $logic_stack, $condition_stack, $current_sql, NULL);
 
 		return $current_sql;
 	}

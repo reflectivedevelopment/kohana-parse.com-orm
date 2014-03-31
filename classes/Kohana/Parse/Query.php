@@ -3,7 +3,7 @@
 class Kohana_Parse_Query extends Database_Query {
 
 	// FROM
-	protected $_from = NULL;
+	protected $_table = NULL;
 
 	/**
 	 * Return the SQL query string.
@@ -43,8 +43,7 @@ class Kohana_Parse_Query extends Database_Query {
 
 		if ( ! empty($this->_parameters))
 		{
-			// Quote all of the values
-			$values = array_map(array($db, 'quote'), $this->_parameters);
+			$values = $this->_parameters;
 
 			// Replace the values in the SQL
 			$sql = strtr($sql, $values);
@@ -87,7 +86,7 @@ class Kohana_Parse_Query extends Database_Query {
 		if ($this->_lifetime !== NULL AND $this->_type === Database::SELECT)
 		{
 			// Set the cache key based on the database instance name and SQL
-			$cache_key = 'Parse::query("'.$db.'", "'. $this->_from .'", "'.$sql.'")';
+			$cache_key = 'Parse::query("'.$db.'", "'. $this->_table .'", "'.$sql.'")';
 
 			// Read the cache first to delete a possible hit with lifetime <= 0
 			if (($result = Kohana::cache($cache_key, NULL, $this->_lifetime)) !== NULL
@@ -101,8 +100,20 @@ class Kohana_Parse_Query extends Database_Query {
 		// Execute the query
 		if ($this->_type == Database::SELECT)
 		{
-			$result = $db->objectQuery($this->_from, $sql);
-			$result = new Database_Parse_Result($result, $this->_from, $sql, $as_object, $object_params);
+			$result = $db->objectQuery($this->_table, $sql);
+			$result = new Database_Parse_Result($result, $this->_table, $sql, $as_object, $object_params);
+
+		}
+		else if ($this->_type == Database::INSERT)
+		{
+			$result = $db->objectCreate($this->_table, $sql['values']);
+		}
+		else if ($this->_type == Database::UPDATE)
+		{
+			$result = $db->objectPut($this->_table, $sql['where'], $sql['values']);
+		}
+		else if ($this->_type == Database::DELETE)
+		{
 
 		}
 

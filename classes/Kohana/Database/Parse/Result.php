@@ -70,8 +70,18 @@ class Kohana_Database_Parse_Result extends Database_Result {
 			Kohana ORM will make all the values in the changed state by doing this. Can't really get around it in pure PHP. Need to fix upstream ORM at some point if this is really a problem.
 
 			*/
+			if (in_array('start_create', get_class_methods($result)))
+			{
+				$result->start_create();
+			}
+
 			foreach ($values as $key => $value)
 				$result->$key = $value;
+
+			if (in_array('end_create', get_class_methods($result)))
+			{
+				$result->end_create();
+			}
 
 			return $result;
 		}

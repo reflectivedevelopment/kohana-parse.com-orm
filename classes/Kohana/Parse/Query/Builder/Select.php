@@ -68,7 +68,7 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 	 */
 	public function from($table)
 	{
-		list($this->_from, ) = $table;
+		list($this->_table, ) = $table;
 
 		return $this;
 	}
@@ -147,7 +147,7 @@ class Kohana_Parse_Query_Builder_Select extends Parse_Query_Builder_Where {
 
 		$this->_distinct = FALSE;
 
-		$this->_from      =
+		$this->_table      =
 		$this->_offset    =
 		$this->_last_join = NULL;
 

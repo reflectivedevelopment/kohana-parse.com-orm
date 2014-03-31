@@ -177,27 +177,7 @@ class Kohana_Parse_Query_Builder extends Parse_Query {
 	 */
 	protected function _compile_set(Parse $db, array $values)
 	{
-		throw new Exception('Not implemented!');
-
-		$set = array();
-		foreach ($values as $group)
-		{
-			// Split the set
-			list ($column, $value) = $group;
-
-			// Quote the column name
-			$column = $db->quote_column($column);
-
-			if ((is_string($value) AND array_key_exists($value, $this->_parameters)) === FALSE)
-			{
-				// Quote the value, it is not a parameter
-				$value = $db->quote($value);
-			}
-
-			$set[$column] = $column.' = '.$value;
-		}
-
-		return implode(', ', $set);
+		return $values;
 	}
 
 	/**

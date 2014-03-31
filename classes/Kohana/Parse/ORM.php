@@ -10,6 +10,8 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 	 */
 	protected $_primary_key = 'objectId';
 
+	protected $_create = false;
+
 	/**
 	 * Prepares the model database connection, determines the table name,
 	 * and loads column information.
@@ -122,6 +124,23 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 		$this->clear();
 	}
 
+	public function start_create()
+	{
+		$this->_create = true;
+	}
+
+	public function end_create()
+	{
+		$this->_create = false;
+		if ( ! empty($this->_cast_data))
+		{
+			// Load preloaded data from a database call cast
+			$this->_load_values($this->_cast_data);
+
+			$this->_cast_data = array();
+		}
+	}
+
 	public function reload_columns($force = FALSE)
 	{
 		if ($force === TRUE OR empty($this->_table_columns))
@@ -153,7 +172,7 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 	 */
 	public function set($column, $value)
 	{
-		if ( ! isset($this->_object_name))
+		if ( ! isset($this->_object_name) || $this->_create)
 		{
 			// Object not yet constructed, so we're loading data from a database call cast
 			$this->_cast_data[$column] = $value;
@@ -287,7 +306,7 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 		if ( ! array_key_exists($this->_primary_key, $data))
 		{
 			// Load the insert id as the primary key if it was left out
-			$this->_object[$this->_primary_key] = $this->_primary_key_value = $result[0];
+			$this->_object[$this->_primary_key] = $this->_primary_key_value = $result;
 		}
 		else
 		{

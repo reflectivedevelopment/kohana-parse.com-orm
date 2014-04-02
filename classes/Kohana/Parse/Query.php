@@ -114,7 +114,7 @@ class Kohana_Parse_Query extends Database_Query {
 		}
 		else if ($this->_type == Database::DELETE)
 		{
-
+			$result = $db->objectDelete($this->_table, $sql['where']);
 		}
 
 		if (isset($cache_key) AND $this->_lifetime > 0)

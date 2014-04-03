@@ -161,6 +161,103 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 		throw new Exception('Not implemented!');
 	}
 
+	public function _get($column)
+	{
+		if (array_key_exists($column, $this->_object))
+		{
+			return (in_array($column, $this->_serialize_columns))
+				? $this->_unserialize_value($this->_object[$column])
+				: $this->_object[$column];
+		}
+		elseif (isset($this->_related[$column]))
+		{
+			// Return related model that has already been fetched
+			return $this->_related[$column];
+		}
+		elseif (isset($this->_belongs_to[$column]))
+		{
+			$model = $this->_related($column);
+
+			// Use this model's column and foreign model's primary key
+			$col = $model->_primary_key;
+			$key = $this->_belongs_to[$column]['foreign_key'];
+			$val = $this->$key;
+
+			// Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would
+			// return the last inserted record instead of an empty result.
+			// See: http://mysql.localhost.net.ar/doc/refman/5.1/en/server-session-variables.html#sysvar_sql_auto_is_null
+			if ($val !== NULL)
+			{
+				$model->where($col, '=', $val)->find();
+			}
+
+			return $this->_related[$column] = $model;
+		}
+		elseif (isset($this->_has_one[$column]))
+		{
+			$model = $this->_related($column);
+
+			// Use this model's primary key value and foreign model's column
+			$col = $this->_has_one[$column]['foreign_key'];
+			$val = $this->pk();
+
+			$model->where($col, '=', $val)->find();
+
+			return $this->_related[$column] = $model;
+		}
+		elseif (isset($this->_has_many[$column]))
+		{
+			$model = ORM::factory($this->_has_many[$column]['model']);
+
+			if (isset($this->_has_many[$column]['through']))
+			{
+				// Grab has_many "through" relationship table
+				$through = $this->_has_many[$column]['through'];
+
+				// Join on through model's target foreign key (far_key) and target model's primary key
+				$join_col1 = $through.'.'.$this->_has_many[$column]['far_key'];
+				$join_col2 = $model->_object_name.'.'.$model->_primary_key;
+
+				$model->join($through)->on($join_col1, '=', $join_col2);
+
+				// Through table's source foreign key (foreign_key) should be this model's primary key
+				$col = $through.'.'.$this->_has_many[$column]['foreign_key'];
+				$val = $this->pk();
+			}
+			else
+			{
+				// Simple has_many relationship, search where target model's foreign key is this model's primary key
+				$col = $this->_has_many[$column]['foreign_key'];
+				$val = $this->pk();
+			}
+
+			return $model->where($col, '=', $val);
+		}
+		else
+		{
+			throw new Kohana_Exception('The :property property does not exist in the :class class',
+				array(':property' => $column, ':class' => get_class($this)));
+		}
+	}
+
+	public function get($column)
+	{
+		$value = $this->_get($column);
+
+		if (array_key_exists($column, $this->_table_columns))
+		{
+			if (strtolower($this->_table_columns[$column]['type']) == 'pointer')
+			{
+				return $value['objectId'];
+			}
+			else if (strtolower($this->_table_columns[$column]['type']) == 'date')
+			{
+				return $value['iso'];
+			}
+		}
+		return $value;
+	}
+
 	/**
 	 * Handles setting of columns
 	 * Override this method to add custom set behavior
@@ -190,6 +287,44 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 			// Filter the data
 			$value = $this->run_filter($column, $value);
 
+			if (array_key_exists($column, $this->_table_columns))
+			{
+				if (strtolower($this->_table_columns[$column]['type']) == 'pointer')
+				{
+					// See if the data really changed
+					if ($value !== $this->_object[$column]['objectId'])
+					{
+						$this->_object[$column]['objectId'] = $value;
+						$this->_object[$column]['__type'] = 'Pointer';
+						$this->_object[$column]['className'] = $this->_table_columns[$column]['class'];
+
+						// Data has changed
+						$this->_changed[$column] = $column;
+
+						// Object is no longer saved or valid
+						$this->_saved = $this->_valid = FALSE;
+
+						return $this;
+					}
+				}
+				else if (strtolower($this->_table_columns[$column]['type']) == 'date')
+				{
+					// See if the data really changed
+					if ($value !== $this->_object[$column]['objectId'])
+					{
+						$this->_object[$column]['iso'] = $value;
+						$this->_object[$column]['__type'] = 'Date';
+
+						// Data has changed
+						$this->_changed[$column] = $column;
+
+						// Object is no longer saved or valid
+						$this->_saved = $this->_valid = FALSE;
+
+						return $this;
+					}
+				}
+			}
 			// See if the data really changed
 			if ($value !== $this->_object[$column])
 			{
@@ -208,7 +343,7 @@ class Kohana_Parse_ORM extends ORM implements serializable {
 			$this->_related[$column] = $value;
 
 			// Update the foreign key of this model
-			$this->_object[$this->_belongs_to[$column]['foreign_key']] = ($value instanceof ORM)
+			$this->$this->_belongs_to[$column]['foreign_key'] = ($value instanceof ORM)
 				? $value->pk()
 				: NULL;
 
